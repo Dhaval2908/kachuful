@@ -318,12 +318,19 @@ let maxCards = 7;       // upper limit per user request
 let currentRound = 0;
 let roundCards = 1;
 let direction = 1;      // 1 going up, -1 going down
-let dealerIndex = 0;    // the player who "deals" this round (previous player of first bidder)
+let dealerIndex = -1;    // the player who "deals" this round (previous player of first bidder)
 let bids = [];          // latest round bids (by player index)
 let results = [];       // latest round results (tricks won)
 let history = [];       // list of rounds: each round is array of round points per player
 let autoNext = false;
-const SUITS = ["♠ Kali", "♣ Charkat", "♦ Fuli", "♥ Lali"];
+const SUITS = ["♠ Kali", "♦ Charkat", "♣ Fuli", "♥ Lali"];
+const SUIT_COLORS = {
+  "♠": "black",
+  "♦": "red",
+  "♣": "black",
+  "♥": "red"
+};
+
 
 /* ------- UI refs ------- */
 const nameInputsDiv = document.getElementById("nameInputs");
@@ -418,14 +425,20 @@ function nextRound(){
     }
   }
 
-  // rotate dealer: dealerIndex becomes (dealerIndex + 1) % numPlayers each round
-  dealerIndex = (dealerIndex + 1) % numPlayers;
+  // rotate dealer only after first round
+ if(currentRound > 1){
+    dealerIndex = (dealerIndex + 1) % numPlayers;
+  } else {
+    dealerIndex = (numPlayers - 1); // first round dealer = last player
+  }
 
   // reset bids/results for new round
   bids = Array(numPlayers).fill(null);
   results = Array(numPlayers).fill(null);
 
   const joker = SUITS[(currentRound - 1) % SUITS.length];
+  const symbol = joker[0]; // first char is the suit symbol
+  jokerSuitEl.style.color = SUIT_COLORS[symbol] || "black";
 
   // update round UI
   roundBadge.innerText = `Round ${currentRound}`;
@@ -623,12 +636,19 @@ function renderResultsList(){
 /* ------- Save results: compute points and advance round ------- */
 btnSaveResults.addEventListener("click", ()=>{
   // validate results
+  let totalTricks = 0;
   for (let i=0;i<numPlayers;i++){
     const val = document.getElementById(`result_input_${i}`).value;
     if (val === "") { alert("Fill all results."); return; }
     const n = parseInt(val);
-    if (n < 0 || n > roundCards) { alert(`Invalid tricks for ${players[i].name}`); return; }
+    if (n < 0 || n > roundCards) {alert(`Invalid tricks for ${players[i].name}. Must be between 0 and ${roundCards}.`); return; }
     results[i] = n;
+    totalTricks += n;
+  }
+   // enforce total tricks = number of cards
+  if(totalTricks !== roundCards) {
+    alert(`Total tricks entered (${totalTricks}) does not match number of cards in this round (${roundCards}).`);
+    return;
   }
 
   // compute round points and update totals
