@@ -5,37 +5,38 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Kachuful — Single Page</title>
 <style>
-    
-  :root{
-    --bg1: #0f172a; /* deep */
-    --card-bg: #ffffff;
-    --accent: #f97316; /* orange */
-    --accent2: #06b6d4; /* cyan */
-    --muted: #6b7280;
-    --good: #10b981;
-    --bad: #ef4444;
-  }
-  body{
-    margin:0;
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    background: linear-gradient(180deg, #fdfcfb 0%, #f1f5f9 100%);
-    color:#0b1220;
-    padding:20px;
-  }
+:root{
+  --bg1: #0f172a; /* deep */
+  --card-bg: #ffffff;
+  --accent: #f97316; /* orange */
+  --accent2: #06b6d4; /* cyan */
+  --muted: #6b7280;
+  --good: #10b981;
+  --bad: #ef4444;
+}
 
-  .app {
-    max-width:1200px;
-    margin:0 auto;
-    display:grid;
-    grid-template-columns: 1fr 420px;
-    gap:20px;
-    align-items:start;
-  }
+body{
+  margin:0;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(180deg, #fdfcfb 0%, #f1f5f9 100%);
+  color:#0b1220;
+  padding:16px;
+}
 
-  /* Header redesign */
+.app {
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns: 1fr 420px;
+  gap:20px;
+  align-items:start;
+}
+
+/* Header redesign */
 .game-header {
   grid-column: 1/-1;
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
@@ -49,6 +50,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 auto;
+  min-width: 180px;
 }
 
 .logo-circle {
@@ -67,7 +70,7 @@
 
 .title-group h1 {
   font-family: 'Luckiest Guy', cursive;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   margin: 0;
   line-height: 1.2;
   color: var(--accent);
@@ -75,7 +78,7 @@
 }
 
 .title-group .tagline {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--muted);
   margin: 0;
 }
@@ -84,47 +87,51 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   background: white;
   color: var(--muted);
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 6px 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  max-width: 420px;
+  max-width: 100%;
+  flex: 1 1 auto;
+  margin-top: 8px;
 }
-  .panel{
-    background:var(--card-bg);
-    border-radius:12px;
-    padding:16px;
-    box-shadow: 0 8px 20px rgba(12,18,28,0.06);
-  }
 
-  /* LEFT area: game controls */
-  .left-col .top-row{
-    display:flex;
-    gap:12px;
-    margin-bottom:12px;
-  }
-  .setup, .round-info, .bids, .results {
-    margin-bottom:12px;
-  }
+.panel{
+  background:var(--card-bg);
+  border-radius:12px;
+  padding:16px;
+  box-shadow: 0 8px 20px rgba(12,18,28,0.06);
+}
 
-  label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:6px; }
-  input[type="text"], input[type="number"], select {
-    width:100%;
-    padding:8px 10px;
-    border-radius:8px;
-    border:1px solid #e6e9ee;
-    outline:none;
-    box-sizing:border-box;
-    font-size:0.95rem;
-  }
-  input[type="number"] { width:90px; }
+/* LEFT area: game controls */
+.left-col .top-row{
+  display:flex;
+  gap:12px;
+  margin-bottom:12px;
+  flex-wrap: wrap;
+}
+.setup, .round-info, .bids, .results {
+  margin-bottom:12px;
+}
 
-  .row{ display:flex; gap:8px; align-items:center; }
-  .small { font-size:0.85rem; color:var(--muted); }
+label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:6px; }
+input[type="text"], input[type="number"], select {
+  width:100%;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid #e6e9ee;
+  outline:none;
+  box-sizing:border-box;
+  font-size:0.95rem;
+}
+input[type="number"] { width:90px; }
 
-  .btn {
+.row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.small { font-size:0.85rem; color:var(--muted); }
+
+.btn {
   background:  var(--accent);
   border-radius: 999px;
   padding: 10px 18px;
@@ -137,70 +144,80 @@
 }
 .btn:hover { transform: scale(1.05); }
 
-  .btn.secondary { background:var(--accent2); box-shadow: 0 6px 18px rgba(6,182,212,0.12); }
-  .btn.ghost { background:transparent; color:var(--muted); border:1px solid #eee; box-shadow:none; }
+.btn.secondary { background:var(--accent2); box-shadow: 0 6px 18px rgba(6,182,212,0.12); }
+.btn.ghost { background:transparent; color:var(--muted); border:1px solid #eee; box-shadow:none; width:auto; }
 
-  .round-badge {
-    display:inline-flex;
-    gap:8px;
-    align-items:center;
-    padding:8px 12px;
-    border-radius:999px;
-    background:linear-gradient(90deg, rgba(6,182,212,0.08), rgba(249,115,22,0.06));
-    border:1px solid rgba(0,0,0,0.03);
-    font-weight:600;
+.round-badge {
+  display:inline-flex;
+  gap:8px;
+  align-items:center;
+  padding:8px 12px;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(6,182,212,0.08), rgba(249,115,22,0.06));
+  border:1px solid rgba(0,0,0,0.03);
+  font-weight:600;
+}
+
+.status {
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-top:8px;
+  flex-wrap: wrap;
+}
+
+/* bidding / order list */
+.order-list { margin-top:8px; }
+.player-line{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  padding:8px;
+  border-radius:8px;
+  border:1px dashed #f1f5f9;
+  margin-bottom:8px;
+  transition: all .12s ease;
+  flex-wrap: wrap;
+}
+.player-line.active {
+  background: linear-gradient(90deg, rgba(6,182,212,0.06), rgba(6,182,212,0.02));
+  border-style:solid;
+  border-color: rgba(6,182,212,0.12);
+  transform: translateY(-2px);
+}
+.player-name { font-weight:700; min-width:120px; }
+.player-meta { font-size:0.85rem; color:var(--muted); margin-left:auto; }
+
+.hint { font-size:0.85rem; color:var(--muted); margin-top:6px; }
+
+/* scoreboard (right) */
+.right-col h3 { margin-top:0; }
+.score-table { width:100%; border-collapse:collapse; margin-top:8px; overflow:auto; display:block; }
+.score-table th, .score-table td {
+  padding:6px 6px; border:1px solid #eef2f7; text-align:center; font-size:0.9rem;
+}
+.score-table th { background: linear-gradient(180deg,#06b6d4,#0ea5a1); color:white; font-weight:700; }
+.score-total { font-weight:800; background:#0b1220;color:#fff;border-radius:8px;padding:4px 6px; display:inline-block; }
+.round-col { min-width:56px; }
+
+/* small helpers */
+.muted { color:var(--muted); font-size:0.85rem; }
+.positive { color:var(--good); font-weight:700; }
+.negative { color:var(--bad); font-weight:700; }
+
+/* responsive */
+@media (max-width:980px){
+  .app { 
+    grid-template-columns: 1fr; 
   }
-
-  .status {
-    display:flex;
-    gap:10px;
-    align-items:center;
-    margin-top:8px;
-  }
-
-  /* bidding / order list */
-  .order-list { margin-top:8px; }
-  .player-line{
-    display:flex;
-    gap:10px;
-    align-items:center;
-    padding:8px;
-    border-radius:8px;
-    border:1px dashed #f1f5f9;
-    margin-bottom:8px;
-    transition: all .12s ease;
-  }
-  .player-line.active {
-    background: linear-gradient(90deg, rgba(6,182,212,0.06), rgba(6,182,212,0.02));
-    border-style:solid;
-    border-color: rgba(6,182,212,0.12);
-    transform: translateY(-2px);
-  }
-  .player-name { font-weight:700; min-width:120px; }
-  .player-meta { font-size:0.85rem; color:var(--muted); margin-left:auto; }
-
-  .hint { font-size:0.85rem; color:var(--muted); margin-top:6px; }
-
-  /* scoreboard (right) */
-  .right-col h3 { margin-top:0; }
-  .score-table { width:100%; border-collapse:collapse; margin-top:8px; overflow:auto; }
-  .score-table th, .score-table td {
-    padding:8px 6px; border:1px solid #eef2f7; text-align:center; font-size:0.95rem;
-  }
-  .score-table th { background: linear-gradient(180deg,#06b6d4,#0ea5a1); color:white; font-weight:700; }
-  .score-total { font-weight:800; background:#0b1220;color:#fff;border-radius:8px;padding:6px 8px; display:inline-block; }
-  .round-col { min-width:56px; }
-
-  /* small helpers */
-  .muted { color:var(--muted); font-size:0.9rem; }
-  .positive { color:var(--good); font-weight:700; }
-  .negative { color:var(--bad); font-weight:700; }
-
-  /* responsive */
-  @media (max-width:980px){
-    .app { grid-template-columns: 1fr; }
-    .right-col { order: -1; } /* leaderboard on top for mobile */
-  }
+  .game-header { flex-direction: column; align-items:flex-start; }
+  .rules-chip { margin-top:8px; }
+  .row { flex-direction: column; }
+  .btn { width: 100%; }
+  .left-col, .right-col { padding:12px; }
+  input[type="number"], input[type="text"] { width: 100%; }
+  .score-table { font-size:0.8rem; overflow-x:auto; }
+}
 </style>
 </head>
 <body>
