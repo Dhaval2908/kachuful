@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Kachuful — Single Page</title>
+<style>
+  :root{
+    --bg1: #0f172a; /* deep */
+    --card-bg: #ffffff;
+    --accent: #f97316; /* orange */
+    --accent2: #06b6d4; /* cyan */
+    --muted: #6b7280;
+    --good: #10b981;
+    --bad: #ef4444;
+  }
+  body{
+    margin:0;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    background: linear-gradient(180deg, #fdfcfb 0%, #f1f5f9 100%);
+    color:#0b1220;
+    padding:20px;
+  }
+
+  .app {
+    max-width:1200px;
+    margin:0 auto;
+    display:grid;
+    grid-template-columns: 1fr 420px;
+    gap:20px;
+    align-items:start;
+  }
+
+  header{
+    grid-column:1/-1;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  header h1{ margin:0; font-size:1.4rem; letter-spacing:0.2px; }
+  header p{ margin:0; color:var(--muted); font-size:0.95rem; }
+
+  .panel{
+    background:var(--card-bg);
+    border-radius:12px;
+    padding:16px;
+    box-shadow: 0 8px 20px rgba(12,18,28,0.06);
+  }
+
+  /* LEFT area: game controls */
+  .left-col .top-row{
+    display:flex;
+    gap:12px;
+    margin-bottom:12px;
+  }
+  .setup, .round-info, .bids, .results {
+    margin-bottom:12px;
+  }
+
+  label{ display:block; font-size:0.9rem; color:var(--muted); margin-bottom:6px; }
+  input[type="text"], input[type="number"], select {
+    width:100%;
+    padding:8px 10px;
+    border-radius:8px;
+    border:1px solid #e6e9ee;
+    outline:none;
+    box-sizing:border-box;
+    font-size:0.95rem;
+  }
+  input[type="number"] { width:90px; }
+
+  .row{ display:flex; gap:8px; align-items:center; }
+  .small { font-size:0.85rem; color:var(--muted); }
+
+  .btn {
+    background:var(--accent);
+    color:white;
+    padding:8px 12px;
+    border-radius:10px;
+    border:0;
+    cursor:pointer;
+    font-weight:600;
+    box-shadow: 0 6px 18px rgba(249,115,22,0.12);
+  }
+  .btn.secondary { background:var(--accent2); box-shadow: 0 6px 18px rgba(6,182,212,0.12); }
+  .btn.ghost { background:transparent; color:var(--muted); border:1px solid #eee; box-shadow:none; }
+
+  .round-badge {
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+    padding:8px 12px;
+    border-radius:999px;
+    background:linear-gradient(90deg, rgba(6,182,212,0.08), rgba(249,115,22,0.06));
+    border:1px solid rgba(0,0,0,0.03);
+    font-weight:600;
+  }
+
+  .status {
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top:8px;
+  }
+
+  /* bidding / order list */
+  .order-list { margin-top:8px; }
+  .player-line{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    padding:8px;
+    border-radius:8px;
+    border:1px dashed #f1f5f9;
+    margin-bottom:8px;
+    transition: all .12s ease;
+  }
+  .player-line.active {
+    background: linear-gradient(90deg, rgba(6,182,212,0.06), rgba(6,182,212,0.02));
+    border-style:solid;
+    border-color: rgba(6,182,212,0.12);
+    transform: translateY(-2px);
+  }
+  .player-name { font-weight:700; min-width:120px; }
+  .player-meta { font-size:0.85rem; color:var(--muted); margin-left:auto; }
+
+  .hint { font-size:0.85rem; color:var(--muted); margin-top:6px; }
+
+  /* scoreboard (right) */
+  .right-col h3 { margin-top:0; }
+  .score-table { width:100%; border-collapse:collapse; margin-top:8px; overflow:auto; }
+  .score-table th, .score-table td {
+    padding:8px 6px; border:1px solid #eef2f7; text-align:center; font-size:0.95rem;
+  }
+  .score-table th { background: linear-gradient(180deg,#06b6d4,#0ea5a1); color:white; font-weight:700; }
+  .score-total { font-weight:800; background:#0b1220;color:#fff;border-radius:8px;padding:6px 8px; display:inline-block; }
+  .round-col { min-width:56px; }
+
+  /* small helpers */
+  .muted { color:var(--muted); font-size:0.9rem; }
+  .positive { color:var(--good); font-weight:700; }
+  .negative { color:var(--bad); font-weight:700; }
+
+  /* responsive */
+  @media (max-width:980px){
+    .app { grid-template-columns: 1fr; }
+    .right-col { order: -1; } /* leaderboard on top for mobile */
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Kachuful — Live score & bidding</h1>
+        <p class="muted">Enter players in order. The order you type decides turn order. First player entered starts round 1.</p>
+      </div>
+      <div class="small muted">Rules: last bidder cannot bid the exact remaining tricks. Win = bid + 10, Lose = -bid</div>
+    </header>
+
+    <!-- LEFT -->
+    <div class="panel left-col">
+      <!-- SETUP -->
+      <section class="setup" id="setupSection">
+        <div class="row">
+          <label style="flex:1">
+            <div class="small">Number of players</div>
+            <input id="numPlayers" type="number" min="3" max="6" value="4">
+          </label>
+          <div style="width:160px;">
+            <div class="small">Max cards per round</div>
+            <input id="maxCards" type="number" min="1" max="13" value="7">
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="small">Enter player names in order (the entered order is the bidding order)</div>
+          <div id="nameInputs" style="display:flex; gap:8px; margin-top:8px;"></div>
+          <div style="margin-top:10px;">
+            <button class="btn" id="btnStart">Start Game</button>
+            <button class="btn ghost" id="btnReset" style="margin-left:8px">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ROUND INFO -->
+      <section class="round-info panel" id="roundPanel" style="margin-top:12px; display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div class="round-badge" id="roundBadge">Round 1</div>
+            <div class="muted" id="cardsInfo">Cards: 1</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="small">Joker / trump</div>
+            <div style="font-size:1.1rem; font-weight:800;" id="jokerSuit">—</div>
+          </div>
+        </div>
+
+        <div class="status">
+          <div class="small">First bidder this round: <strong id="firstBidder">—</strong></div>
+          <div class="small">Dealer: <strong id="dealerName">—</strong></div>
+          <div style="margin-left:auto;">
+            <button class="btn secondary" id="btnAutoNext">Auto Next Round</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- BIDDING (always visible after start) -->
+      <section class="bids panel" id="bidsPanel" style="display:none;">
+        <h3 style="margin:0 0 8px 0">Bidding — enter number of tricks you expect</h3>
+        <div class="hint">Bidding order shown below. Active bidder is highlighted. Last bidder cannot make the bid equal to <strong>remaining</strong> tricks.</div>
+
+        <div class="order-list" id="orderList" style="margin-top:12px;"></div>
+
+        <div style="margin-top:8px;">
+          <button class="btn" id="btnConfirmBids" disabled>Confirm Bids</button>
+          <button class="btn ghost" id="btnClearBids" style="margin-left:8px">Clear Bids</button>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section class="results panel" id="resultsPanel" style="display:none;">
+        <h3 style="margin:0 0 8px 0">Enter tricks won this round</h3>
+        <div class="hint">Input tricks actually won by each player (0 to number of cards)</div>
+        <div id="resultsList" style="margin-top:12px"></div>
+        <div style="margin-top:8px;">
+          <button class="btn" id="btnSaveResults" disabled>Save Results & Next Round</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT: Scoreboard -->
+    <aside class="panel right-col">
+      <h3>Live Leaderboard</h3>
+      <div class="small muted">Columns = rounds played. Last column = total</div>
+      <div style="overflow:auto; margin-top:10px;">
+        <table class="score-table" id="scoreTable">
+          <!-- table content generated by JS -->
+        </table>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px; align-items:center; justify-content:space-between;">
+        <div class="small muted">Rounds played: <strong id="roundCount">0</strong></div>
+        <div>
+          <button class="btn ghost" id="btnEndGame">End Game</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+<script>
+/* ------- Game state ------- */
+let players = [];       // { name, total }
+let numPlayers = 0;
+let maxCards = 7;       // upper limit per user request
+let currentRound = 0;
+let roundCards = 1;
+let direction = 1;      // 1 going up, -1 going down
+let dealerIndex = 0;    // the player who "deals" this round (previous player of first bidder)
+let bids = [];          // latest round bids (by player index)
+let results = [];       // latest round results (tricks won)
+let history = [];       // list of rounds: each round is array of round points per player
+let autoNext = false;
+const SUITS = ["♠ Kali", "♣ Charkat", "♦ Fuli", "♥ Lali"];
+
+/* ------- UI refs ------- */
+const nameInputsDiv = document.getElementById("nameInputs");
+const btnStart = document.getElementById("btnStart");
+const btnReset = document.getElementById("btnReset");
+const btnConfirmBids = document.getElementById("btnConfirmBids");
+const btnClearBids = document.getElementById("btnClearBids");
+const btnSaveResults = document.getElementById("btnSaveResults");
+const btnAutoNext = document.getElementById("btnAutoNext");
+const btnEndGame = document.getElementById("btnEndGame");
+
+const roundBadge = document.getElementById("roundBadge");
+const cardsInfo = document.getElementById("cardsInfo");
+const jokerSuitEl = document.getElementById("jokerSuit");
+const firstBidderEl = document.getElementById("firstBidder");
+const dealerNameEl = document.getElementById("dealerName");
+const orderList = document.getElementById("orderList");
+const resultsList = document.getElementById("resultsList");
+const scoreTable = document.getElementById("scoreTable");
+const roundCountEl = document.getElementById("roundCount");
+// Joker order: Kali (Spades), Charkat (Clubs), Fuli (Diamonds), Lali (Hearts)
+
+
+
+/* ------- Setup UI: generate name inputs based on number chosen ------- */
+function renderNameInputs() {
+  nameInputsDiv.innerHTML = "";
+  const n = parseInt(document.getElementById("numPlayers").value) || 0;
+  for (let i=0;i<n;i++){
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.placeholder = `Player ${i+1}`;
+    inp.id = `name_${i}`;
+    inp.style.flex = "1";
+    nameInputsDiv.appendChild(inp);
+  }
+  // store the tentative maxCards
+  maxCards = parseInt(document.getElementById("maxCards").value) || 7;
+}
+renderNameInputs();
+document.getElementById("numPlayers").addEventListener("input", renderNameInputs);
+document.getElementById("maxCards").addEventListener("input", ()=>{
+  maxCards = parseInt(document.getElementById("maxCards").value) || 7;
+});
+
+/* ------- Start the game ------- */
+btnStart.addEventListener("click", ()=>{
+  // collect names in order they were entered
+  const n = parseInt(document.getElementById("numPlayers").value) || 0;
+  if (n < 3 || n > 6) { alert("Choose between 3 and 6 players."); return; }
+  players = [];
+  for (let i=0;i<n;i++){
+    const val = (document.getElementById(`name_${i}`).value || "").trim();
+    players.push({ name: val || `P${i+1}`, total:0 });
+  }
+  numPlayers = players.length;
+  currentRound = 0;
+  roundCards = 1;
+  direction = 1;
+  dealerIndex = (numPlayers - 1) % numPlayers; // dealer is "previous" of first bidder
+  bids = Array(numPlayers).fill(null);
+  results = Array(numPlayers).fill(null);
+  history = [];
+  // hide setup section visually
+  document.getElementById("setupSection").style.display = "none";
+  // show panels
+  document.getElementById("roundPanel").style.display = "block";
+  document.getElementById("bidsPanel").style.display = "block";
+  document.getElementById("resultsPanel").style.display = "block";
+  // render first round
+  nextRound(); // advances to round 1 and sets up UI
+});
+
+/* ------- Reset button (reload) ------- */
+btnReset.addEventListener("click", ()=>location.reload());
+
+/* ------- Next round logic ------- */
+function nextRound(){
+  // pick new round number and card count
+  currentRound++;
+  if (currentRound === 1) {
+    roundCards = 1;
+    direction = 1;
+  } else {
+    // adjust after previous end
+    if (direction === 1) {
+      if (roundCards < maxCards) roundCards++;
+      else { direction = -1; roundCards--; }
+    } else {
+      if (roundCards > 1) roundCards--;
+      else { direction = 1; roundCards++; }
+    }
+  }
+
+  // rotate dealer: dealerIndex becomes (dealerIndex + 1) % numPlayers each round
+  dealerIndex = (dealerIndex + 1) % numPlayers;
+
+  // reset bids/results for new round
+  bids = Array(numPlayers).fill(null);
+  results = Array(numPlayers).fill(null);
+
+  const joker = SUITS[(currentRound - 1) % SUITS.length];
+
+  // update round UI
+  roundBadge.innerText = `Round ${currentRound}`;
+  cardsInfo.innerText = `Cards: ${roundCards}`;
+  jokerSuitEl.innerText = joker;
+  firstBidderEl.innerText = players[(dealerIndex + 1) % numPlayers].name;
+  dealerNameEl.innerText = players[dealerIndex].name;
+
+  // re-render order list & table
+  renderOrderList();
+  renderResultsList();
+  updateTable();
+  updateRoundCount();
+  btnConfirmBids.disabled = true;
+  btnSaveResults.disabled = true;
+}
+
+/* ------- Render bidding order (left) ------- */
+function getOrderIndices(){
+  const order = [];
+  for (let i=1;i<=numPlayers;i++){
+    order.push((dealerIndex + i) % numPlayers);
+  }
+  return order;
+}
+
+function renderOrderList(){
+  orderList.innerHTML = "";
+  const order = getOrderIndices();
+
+  // compute which index is active (first one with null bid)
+  let activeIndex = null;
+  for (let idx=0; idx<order.length; idx++){
+    const pIdx = order[idx];
+    if (bids[pIdx] === null){ activeIndex = pIdx; break; }
+  }
+
+  // show total of already entered bids to compute remaining for last bidder
+  let sumSoFar = 0;
+  order.forEach(i => { if (bids[i] !== null) sumSoFar += bids[i]; });
+
+  order.forEach((pIdx, pos) => {
+    const line = document.createElement("div");
+    line.className = "player-line";
+    if (activeIndex === pIdx) line.classList.add("active");
+    // player name
+    const nameEl = document.createElement("div");
+    nameEl.className = "player-name";
+    nameEl.innerText = `${pos+1}. ${players[pIdx].name}`;
+    line.appendChild(nameEl);
+
+    // bid input
+    const bidWrapper = document.createElement("div");
+    bidWrapper.style.display = "flex";
+    bidWrapper.style.gap = "8px";
+    bidWrapper.style.alignItems = "center";
+
+    const bidInput = document.createElement("input");
+    bidInput.type = "number";
+    bidInput.min = 0;
+    bidInput.max = roundCards;
+    bidInput.id = `bid_input_${pIdx}`;
+    bidInput.value = bids[pIdx] === null ? "" : String(bids[pIdx]);
+    bidInput.style.width = "80px";
+    bidInput.disabled = (bids[pIdx] !== null); // once entered, lock until Clear
+
+    // if this is last bidder, show remaining hint
+    const isLast = (pos === order.length - 1);
+    if (isLast){
+      const remaining = roundCards - sumSoFar;
+      const hint = document.createElement("div");
+      hint.className = "player-meta small";
+      hint.style.marginLeft = "8px";
+      hint.innerHTML = `<span class="muted">Remaining: <strong>${remaining}</strong></span>`;
+      line.appendChild(bidWrapper);
+      bidWrapper.appendChild(bidInput);
+      line.appendChild(hint);
+    } else {
+      line.appendChild(bidWrapper);
+      bidWrapper.appendChild(bidInput);
+    }
+
+    // meta: total score (on right)
+    const meta = document.createElement("div");
+    meta.className = "player-meta";
+    meta.innerHTML = `Total: <strong>${players[pIdx].total}</strong>`;
+    line.appendChild(meta);
+
+    // event: handle change (only if not disabled)
+    bidInput.addEventListener("input", ()=>{
+      const val = bidInput.value === "" ? null : parseInt(bidInput.value);
+      // guard range
+      if (val !== null && (val < 0 || val > roundCards)) {
+        bidInput.value = "";
+        return;
+      }
+      // enforce last-bidder restriction if last bidder entered
+      const orderNow = getOrderIndices();
+      const lastIdx = orderNow[orderNow.length - 1];
+      bids[pIdx] = (val === null || Number.isNaN(val)) ? null : val;
+
+      // if last bidder entered and all others non-null -> check
+      const allEnteredExceptPossiblyLast = orderNow.every(i => bids[i] !== null);
+      if (allEnteredExceptPossiblyLast) {
+        // compute total
+        let total = 0;
+        for (let i=0;i<numPlayers;i++) total += bids[i] || 0;
+        // forbidden if total === roundCards
+        if (total === roundCards) {
+          alert(`Not allowed: total bids (${total}) equal number of cards (${roundCards}). Last bidder cannot make that bid. Fix your bid.`);
+          // reject this last value
+          bids[pIdx] = null;
+          bidInput.value = "";
+          btnConfirmBids.disabled = true;
+          renderOrderList(); // re-render to update active highlight
+          return;
+        }
+      }
+
+      // enable confirm if all bids filled
+      const allFilled = getOrderIndices().every(i => bids[i] !== null);
+      btnConfirmBids.disabled = !allFilled;
+      renderOrderList();
+    });
+
+    orderList.appendChild(line);
+  });
+}
+
+/* ------- Confirm bids button ------- */
+btnConfirmBids.addEventListener("click", ()=>{
+  // ensure all bids are present
+  const allSet = getOrderIndices().every(i => bids[i] !== null);
+  if (!allSet) { alert("Fill all bids first."); return; }
+  // also check last-bidder restriction again
+  const total = bids.reduce((a,b)=>a+(b||0),0);
+  if (total === roundCards) { alert("Total bids cannot equal number of cards (last bidder restriction)."); return; }
+  // lock inputs (will be re-rendered disabled)
+  renderOrderList();
+  // show results inputs to record tricks won
+  renderResultsList();
+  btnSaveResults.disabled = false;
+});
+
+/* ------- clear bids ------- */
+btnClearBids.addEventListener("click", ()=>{
+  bids = Array(numPlayers).fill(null);
+  btnConfirmBids.disabled = true;
+  renderOrderList();
+});
+
+/* ------- Results UI (enter tricks won) ------- */
+function renderResultsList(){
+  resultsList.innerHTML = "";
+  for (let i=0;i<numPlayers;i++){
+    const row = document.createElement("div");
+    row.className = "player-line";
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+
+    const name = document.createElement("div");
+    name.className = "player-name";
+    name.innerText = players[i].name;
+    row.appendChild(name);
+
+    const bidInfo = document.createElement("div");
+    bidInfo.className = "small muted";
+    bidInfo.style.marginRight = "12px";
+    bidInfo.innerText = `Bid: ${bids[i] === null ? "—" : bids[i]}`;
+    row.appendChild(bidInfo);
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = 0;
+    input.max = roundCards;
+    input.id = `result_input_${i}`;
+    input.value = results[i] === null ? "" : String(results[i]);
+    input.style.width = "80px";
+    row.appendChild(input);
+
+    input.addEventListener("input", ()=>{
+      const v = input.value === "" ? null : parseInt(input.value);
+      results[i] = v;
+      // enable save only if all results filled
+      const allFilled = results.every(x => x !== null && !Number.isNaN(x));
+      btnSaveResults.disabled = !allFilled;
+    });
+
+    resultsList.appendChild(row);
+  }
+  // if bids aren't all set, disable results save
+  btnSaveResults.disabled = !getOrderIndices().every(i => bids[i] !== null);
+}
+
+/* ------- Save results: compute points and advance round ------- */
+btnSaveResults.addEventListener("click", ()=>{
+  // validate results
+  for (let i=0;i<numPlayers;i++){
+    const val = document.getElementById(`result_input_${i}`).value;
+    if (val === "") { alert("Fill all results."); return; }
+    const n = parseInt(val);
+    if (n < 0 || n > roundCards) { alert(`Invalid tricks for ${players[i].name}`); return; }
+    results[i] = n;
+  }
+
+  // compute round points and update totals
+  const roundPoints = Array(numPlayers).fill(0);
+  for (let i=0;i<numPlayers;i++){
+    const bid = bids[i] || 0;
+    const won = results[i] || 0;
+    if (won === bid) {
+      roundPoints[i] = bid + 10;
+    } else {
+      roundPoints[i] = -bid;
+    }
+    players[i].total += roundPoints[i];
+  }
+
+  // record history
+  history.push(roundPoints.slice()); // copy
+
+  // update scoreboard
+  updateTable();
+
+  // auto-advance or wait (we have Auto Next toggle)
+  if (autoNext) {
+    // small delay so user can see updated table before moving
+    setTimeout(() => {
+      nextRound();
+    }, 700);
+  } else {
+    // prepare for next round but require user to click "Next Round" (we will repurpose Auto Next button)
+    // We'll repurpose Auto Next button as "Next Round" when autoNext is off:
+    // For simplicity, call nextRound() only when user clicks the Auto Next toggle or manually presses it.
+    // Here we'll show an inline button to proceed.
+    // (We provide the btnAutoNext to toggle; but also allow clicking it to go next)
+    // Give the user a Next Round prompt:
+    const proceed = confirm("Round saved. Click OK to proceed to next round now, or Cancel to stay on this screen.");
+    if (proceed) nextRound();
+  }
+});
+
+/* ------- Auto Next Round toggle / Next Round behavior ------- */
+btnAutoNext.addEventListener("click", ()=>{
+  // If autoNext is off, clicking will set autoNext=true and change label to "Auto Next: ON (click to toggle)"
+  autoNext = !autoNext;
+  btnAutoNext.innerText = autoNext ? "Auto Next: ON (click to toggle)" : "Auto Next: OFF (click to toggle)";
+  // If user just turned it on and there are saved results ready, proceed immediately
+  // (But our saveResults already handles autoNext flow)
+});
+
+/* ------- End game button ------- */
+btnEndGame.addEventListener("click", ()=>{
+  const winner = players.slice().sort((a,b)=>b.total - a.total)[0];
+  updateTable(true); // show totals now
+  alert(`Game ended. Winner: ${winner.name} with ${winner.total} points.`);
+});
+
+
+/* ------- Table rendering ------- */
+function updateTable(showTotals = false){
+  // header row = players
+  let headerRow = "<tr><th>Round</th>";
+  players.forEach(pl => {
+    headerRow += `<th>${pl.name}</th>`;
+  });
+  if (showTotals) headerRow += `<th>Total</th>`;
+  headerRow += "</tr>";
+
+  let rowsHtml = headerRow;
+
+  // each round = row
+  history.forEach((roundPts, rIdx) => {
+    let row = `<tr><td style="font-weight:700">R${rIdx+1}</td>`;
+    players.forEach((pl, i) => {
+      const val = roundPts[i];
+      const cls = val >= 0 ? "positive" : "negative";
+      row += `<td class="${cls}">${val >= 0 ? `+${val}` : val}</td>`;
+    });
+    if (showTotals) {
+      row += "<td></td>"; // empty on per-round rows
+    }
+    row += "</tr>";
+    rowsHtml += row;
+  });
+
+  // add totals row only when showTotals
+  if (showTotals) {
+    let row = `<tr><td style="font-weight:700">Total</td>`;
+    players.forEach(pl => {
+      row += `<td><span class="score-total">${pl.total}</span></td>`;
+    });
+    row += `<td></td></tr>`;
+    rowsHtml += row;
+  }
+
+  scoreTable.innerHTML = rowsHtml;
+  updateRoundCount();
+}
+
+
+/* ------- helpers ------- */
+function updateRoundCount(){
+  roundCountEl.innerText = history.length;
+}
+
+/* ------- initial small helpers ------- */
+// If user changes maxCards after starting but before first round — we used value at start. No need to implement dynamic change mid-game.
+
+</script>
+</body>
+</html>
