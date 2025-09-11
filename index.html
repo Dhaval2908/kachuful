@@ -681,7 +681,11 @@ btnSaveResults.addEventListener("click", ()=>{
     if (won === bid) {
       roundPoints[i] = bid + 10;
     } else {
-      roundPoints[i] = -bid;
+      if (bid == 0 && results[i]!= 0){
+        roundPoints[i] = -results[i]
+      } else{
+        roundPoints[i] = -bid;
+      }
     }
     players[i].total += roundPoints[i];
   }
