@@ -333,11 +333,16 @@ function handleBidInput(pIdx, val, isLast) {
         const forbiddenNumber = gameState.roundCards - sumOthers;
 
         // 2. Check the restriction for the last bidder
-        if (isLast && n === forbiddenNumber) {
+        if (isLast && n === forbiddenNumber ) {
             alert(`Forbidden Bid! As the last player, you cannot bid ${n} because the total would equal ${gameState.roundCards}.`);
             document.getElementById(`bid_input_${pIdx}`).value = "";
             gameState.bids[pIdx] = null;
-        } else {
+        }else if (n < 0 || n > gameState.roundCards) {
+            alert(`Invalid Bid! Please enter a number between 0 and ${gameState.roundCards}.`);
+            document.getElementById(`bid_input_${pIdx}`).value = "";
+            gameState.bids[pIdx] = null;
+         } 
+        else {
             gameState.bids[pIdx] = n;
         }
     }
