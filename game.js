@@ -166,7 +166,9 @@ function showGameScreen() {
 
 function startNewGame() {
     const n = parseInt(document.getElementById("numPlayers").value);
-    if (n < 3 || n > 8) { alert("Please choose 3-8 players."); return; }
+    const startVal = parseInt(document.getElementById("startCards").value);
+    const maxVal = parseInt(document.getElementById("maxCards").value);
+    if (n < 3 || n > 10) { alert("Please choose 3-10 players."); return; }
 
     const nameInputs = document.querySelectorAll('.player-name-input');
     gameState.players = Array.from(nameInputs).map((input, i) => ({
@@ -175,12 +177,15 @@ function startNewGame() {
     }));
 
     gameState.numPlayers = n;
-    gameState.maxCards = parseInt(document.getElementById("maxCards").value) || 7;
+    gameState.startCards = startVal;
+    gameState.maxCards = maxVal;
     gameState.currentRound = 0;
+    gameState.direction = (startVal >= maxVal) ? -1 : 1;
+    gameState.roundCards = startVal;
     gameState.history = [];
     
     showGameScreen();
-    nextRound();
+    nextRound(true); // "true" means it's the first round, so it won't auto-advance again
 }
 
 function resumeGame() {
@@ -200,32 +205,29 @@ function resumeGame() {
 }
 
 // 5. CORE GAMEPLAY LOGIC
-function nextRound() {
+function nextRound(isFirstRound = false) {
     gameState.currentRound++;
-    
-    // Calculate cards for this round (Original Logic)
-    if (gameState.currentRound === 1) {
-        gameState.roundCards = 1;
-        gameState.direction = 1;
-    } else {
-        if (gameState.direction === 1) {
-            if (gameState.roundCards < gameState.maxCards) {
-                gameState.roundCards++;
-            } else {
-                gameState.direction = -1;
-                gameState.roundCards--;
-            }
-        } else {
-            if (gameState.roundCards > 1) {
-                gameState.roundCards--;
-            } else {
-                gameState.direction = 1;
-                gameState.roundCards++;
-            }
+
+    if (!isFirstRound) {
+        // 1. Move the card count based on direction
+        gameState.roundCards += gameState.direction;
+
+        // 2. Check if we hit the boundaries to flip direction
+        if (gameState.direction === 1 && gameState.roundCards >= gameState.maxCards) {
+            // We reached the top, now prepare to go down
+            gameState.direction = -1;
+        } 
+        else if (gameState.direction === -1 && gameState.roundCards <= 1) {
+            // We reached the bottom (1 card), now prepare to go up
+            gameState.direction = 1;
+        }
+        else if (gameState.direction === -1 && gameState.roundCards <= gameState.startCards && gameState.startCards === gameState.maxCards) {
+             // Special case: if we started at max, went down to 1, and now back at max
+             // You can choose to end the game here or let it loop.
         }
     }
 
-    // Dealer rotates every round
+    // Dealer rotates
     if (gameState.currentRound === 1) {
         gameState.dealerIndex = gameState.numPlayers - 1;
     } else {
